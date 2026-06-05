@@ -1040,63 +1040,55 @@ function gerarPDF() {
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(100, 115, 135);
   pdf.text(m.nome, s1x + sbW / 2, y + sbH - 3, { align: 'center' });
 
-  // Box Lugeon
-  pdf.setFillColor(235, 243, 255);
-  pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
 
-  // Desenha assinatura "J" cursiva da Lugeon via canvas
-  const sigLugeon = document.createElement('canvas');
-  sigLugeon.width = 320;
-  sigLugeon.height = 128;
-  desenharAssinaturaLugeon(sigLugeon);
-  try {
-    pdf.addImage(sigLugeon.toDataURL('image/png'), 'PNG', s2x + 4, y + 2, sbW - 8, sbH - 13);
-  } catch(e) {}
+  // ── BOX LUGEON com assinatura em imagem ──
+pdf.setFillColor(235, 243, 255);
+pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
 
-  pdf.setDrawColor(180, 192, 210);
-  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
-  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(100, 115, 135);
-  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
+// URL da assinatura (arquivo local)
+const urlAssinatura = "preview.png";
 
-  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
-}
+const img = new Image();
+img.src = urlAssinatura;
 
-// ── ASSINATURA CURSIVA DA LUGEON (canvas 2D) ─────────────
-function desenharAssinaturaLugeon(canvas) {
+img.onload = function() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 160;
   const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
+  ctx.drawImage(img, 0, 0, 320, 160);
+  
+  try {
+    pdf.addImage(
+      canvas.toDataURL('image/png'), 'PNG',
+      s2x + 4, y + 2, sbW - 8, sbH - 13
+    );
+  } catch(e) {
+    console.error('Erro ao adicionar assinatura:', e);
+  }
+  
+  pdf.setDrawColor(180, 192, 210); 
+  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
+  pdf.setFont('helvetica', 'normal'); 
+  pdf.setFontSize(7); 
+  pdf.setTextColor(100, 115, 135);
+  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
+  
+  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
+};
 
-  ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = '#1e3a6e';
-  ctx.lineWidth = w * 0.022;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  const sx = w / 100;
-  const sy = h / 50;
-
-  // Traço principal do J
-  ctx.beginPath();
-  ctx.moveTo(52 * sx, 8 * sy);
-  ctx.bezierCurveTo(53 * sx, 9 * sy, 53 * sx, 18 * sy, 52 * sx, 28 * sy);
-  ctx.bezierCurveTo(51 * sx, 36 * sy, 47 * sx, 42 * sy, 40 * sx, 43 * sy);
-  ctx.bezierCurveTo(34 * sx, 44 * sy, 29 * sx, 41 * sy, 28 * sx, 36 * sy);
-  ctx.stroke();
-
-  // Traço superior do J
-  ctx.beginPath();
-  ctx.moveTo(46 * sx, 7 * sy);
-  ctx.bezierCurveTo(49 * sx, 6.5 * sy, 54 * sx, 6.5 * sy, 58 * sx, 7.5 * sy);
-  ctx.stroke();
-
-  // Rabisco/sublinhado cursivo
-  ctx.beginPath();
-  ctx.moveTo(22 * sx, 38 * sy);
-  ctx.bezierCurveTo(30 * sx, 34 * sy, 45 * sx, 33 * sy, 62 * sx, 36 * sy);
-  ctx.bezierCurveTo(70 * sx, 37.5 * sy, 75 * sx, 39 * sy, 78 * sx, 38 * sy);
-  ctx.stroke();
-}
+img.onerror = function() {
+  console.error('Não foi possível carregar preview.png');
+  // Continua sem a assinatura
+  pdf.setDrawColor(180, 192, 210); 
+  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
+  pdf.setFont('helvetica', 'normal'); 
+  pdf.setFontSize(7); 
+  pdf.setTextColor(100, 115, 135);
+  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
+  
+  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
+};
 </script>
 </body>
 </html>
