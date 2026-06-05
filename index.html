@@ -1081,33 +1081,55 @@ function gerarPDF() {
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(100, 115, 135);
   pdf.text(m.nome, s1x + sbW / 2, y + sbH - 3, { align: 'center' });
 
-  // ── BOX LUGEON com assinatura J cursivo em canvas ──
-  pdf.setFillColor(235, 243, 255);
-  pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
 
-  // Gerar assinatura J em canvas offscreen
-  const sigLugeonCanvas = document.createElement('canvas');
-  sigLugeonCanvas.width  = 320;
-  sigLugeonCanvas.height = 160;
-  // Fundo branco leve
-  const lctx = sigLugeonCanvas.getContext('2d');
-  lctx.fillStyle = 'rgba(235,243,255,0)';
-  lctx.fillRect(0, 0, 320, 160);
-  desenharAssinaturaLugeon(sigLugeonCanvas);
+ // ── BOX LUGEON com assinatura em imagem ──
+pdf.setFillColor(235, 243, 255);
+pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
+
+// URL da assinatura (arquivo local)
+const urlAssinatura = "preview.png";
+
+const img = new Image();
+img.src = urlAssinatura;
+
+img.onload = function() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, 320, 160);
   
   try {
     pdf.addImage(
-      sigLugeonCanvas.toDataURL('image/png'), 'PNG',
+      canvas.toDataURL('image/png'), 'PNG',
       s2x + 4, y + 2, sbW - 8, sbH - 13
     );
-  } catch(e) {}
-
-  pdf.setDrawColor(180, 192, 210); pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
-  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(100, 115, 135);
+  } catch(e) {
+    console.error('Erro ao adicionar assinatura:', e);
+  }
+  
+  pdf.setDrawColor(180, 192, 210); 
+  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
+  pdf.setFont('helvetica', 'normal'); 
+  pdf.setFontSize(7); 
+  pdf.setTextColor(100, 115, 135);
   pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
-
+  
   pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
-}
+};
+
+img.onerror = function() {
+  console.error('Não foi possível carregar preview.png');
+  // Continua sem a assinatura
+  pdf.setDrawColor(180, 192, 210); 
+  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
+  pdf.setFont('helvetica', 'normal'); 
+  pdf.setFontSize(7); 
+  pdf.setTextColor(100, 115, 135);
+  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
+  
+  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
+};
 </script>
 </body>
 </html>
