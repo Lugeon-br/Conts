@@ -341,7 +341,7 @@ Ex:
       </div>
 
       <button class="btn btn-primary" onclick="gerarLink()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Gerar link do contrato
       </button>
     </div>
@@ -635,24 +635,16 @@ function getParams() {
   catch(e) { return null; }
 }
 
-function isAdmin() {
-  // Mostra admin se: URL tem ?admin OU se não tem nenhum parâmetro
-  const qs = new URLSearchParams(window.location.search);
-  return qs.has('admin') || (!qs.has('d') && qs.toString() === '');
-}
-
 // ── INICIALIZAÇÃO ────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   const qs = new URLSearchParams(window.location.search);
 
-  // Sem nenhum parâmetro ou com ?admin → painel admin
   if (!qs.has('d')) {
     show('view-admin');
     show('badge-admin');
     return;
   }
 
-  // Tem ?d= → tenta decodificar e mostrar ao cliente
   const dados = getParams();
   if (!dados) {
     show('view-empty');
@@ -894,11 +886,9 @@ function gerarPDF() {
   pdf.setFillColor(8, 14, 28);
   pdf.rect(0, 0, W, 46, 'F');
 
-  // ── ÍCONE LOGO: quadrado azul arredondado ──
   pdf.setFillColor(59, 130, 246);
   pdf.roundedRect(mg, 8, 26, 26, 3, 3, 'F');
 
-  // ── GRÁFICO DENTRO DO ÍCONE ──
   pdf.setDrawColor(255, 255, 255);
   pdf.setLineWidth(0.5);
   pdf.setGState(pdf.GState({ opacity: 0.3 }));
@@ -913,7 +903,6 @@ function gerarPDF() {
   pdf.setFillColor(255, 255, 255);
   pdf.circle(mg+20, mg+3, 1.4, 'F');
 
-  // ── NOME E SUBTÍTULO ──
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(22);
   pdf.setTextColor(240, 245, 255);
@@ -924,7 +913,6 @@ function gerarPDF() {
   pdf.setTextColor(100, 120, 150);
   pdf.text('Contrato de Prestação de Serviços Digitais', mg + 32, 30);
 
-  // ── ID E DATA (direita) ──
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(13);
   pdf.setTextColor(96, 165, 250);
@@ -1030,65 +1018,63 @@ function gerarPDF() {
   if (y > 258) { pdf.addPage(); y = 20; }
   const sbW = 80, sbH = 32, s1x = mg, s2x = W - mg - sbW;
 
-  // Box cliente
+  // Box assinatura do CLIENTE
   pdf.setFillColor(250, 251, 253);
   pdf.roundedRect(s1x, y, sbW, sbH, 2, 2, 'FD');
   if (sigCanvas && sigHasMark) {
-    try { pdf.addImage(sigCanvas.toDataURL('image/png'), 'PNG', s1x + 2, y + 2, sbW - 4, sbH - 12); } catch(e) {}
+    try {
+      pdf.addImage(sigCanvas.toDataURL('image/png'), 'PNG', s1x + 2, y + 2, sbW - 4, sbH - 12);
+    } catch(e) {}
   }
-  pdf.setDrawColor(180, 192, 210); pdf.line(s1x + 4, y + sbH - 9, s1x + sbW - 4, y + sbH - 9);
+  pdf.setDrawColor(180, 192, 210);
+  pdf.line(s1x + 4, y + sbH - 9, s1x + sbW - 4, y + sbH - 9);
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(100, 115, 135);
   pdf.text(m.nome, s1x + sbW / 2, y + sbH - 3, { align: 'center' });
 
+  // Box assinatura da LUGEON — carrega preview.png
+  pdf.setFillColor(235, 243, 255);
+  pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
 
-  // ── BOX LUGEON com assinatura em imagem ──
-pdf.setFillColor(235, 243, 255);
-pdf.roundedRect(s2x, y, sbW, sbH, 2, 2, 'FD');
-
-// URL da assinatura (arquivo local)
-const urlAssinatura = "preview.png";
-
-const img = new Image();
-img.src = urlAssinatura;
-
-img.onload = function() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 320;
-  canvas.height = 160;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, 320, 160);
-  
-  try {
-    pdf.addImage(
-      canvas.toDataURL('image/png'), 'PNG',
-      s2x + 4, y + 2, sbW - 8, sbH - 13
-    );
-  } catch(e) {
-    console.error('Erro ao adicionar assinatura:', e);
+  // Função interna para finalizar o PDF (com ou sem imagem)
+  function finalizarPDF(imgDataURL) {
+    if (imgDataURL) {
+      try {
+        pdf.addImage(imgDataURL, 'PNG', s2x + 4, y + 2, sbW - 8, sbH - 13);
+      } catch(e) {
+        console.error('Erro ao adicionar assinatura Lugeon:', e);
+      }
+    }
+    pdf.setDrawColor(180, 192, 210);
+    pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 115, 135);
+    pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
+    pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
   }
-  
-  pdf.setDrawColor(180, 192, 210); 
-  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
-  pdf.setFont('helvetica', 'normal'); 
-  pdf.setFontSize(7); 
-  pdf.setTextColor(100, 115, 135);
-  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
-  
-  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
-};
 
-img.onerror = function() {
-  console.error('Não foi possível carregar preview.png');
-  // Continua sem a assinatura
-  pdf.setDrawColor(180, 192, 210); 
-  pdf.line(s2x + 4, y + sbH - 9, s2x + sbW - 4, y + sbH - 9);
-  pdf.setFont('helvetica', 'normal'); 
-  pdf.setFontSize(7); 
-  pdf.setTextColor(100, 115, 135);
-  pdf.text('Lugeon — Consultoria Digital', s2x + sbW / 2, y + sbH - 3, { align: 'center' });
-  
-  pdf.save(`Contrato-Lugeon-${m.cid}.pdf`);
-};
+  // Tenta carregar preview.png (deve estar na mesma pasta do HTML)
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width  = img.naturalWidth  || 320;
+    canvas.height = img.naturalHeight || 160;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    finalizarPDF(canvas.toDataURL('image/png'));
+  };
+
+  img.onerror = function() {
+    // preview.png não encontrado — gera o PDF sem a imagem mesmo
+    console.warn('preview.png não encontrado. PDF gerado sem assinatura da Lugeon.');
+    finalizarPDF(null);
+  };
+
+  img.src = 'preview.png';
+
+} // ← fim de gerarPDF()
 </script>
 </body>
 </html>
